@@ -1,7 +1,7 @@
-pyrogram==2.0.17
-pytgcalls==2.0.0
-yt-dlp==2025.05.01
-motor==3.1.1
-youtube-search-python==2021.1.6
-uvloop
+pyrogram==2.0.106
+tgcrypto
+pytgcalls==3.0.0.dev22
+yt-dlp==2024.10.7
+motor==3.3.1
 aiohttp
+uvloop
