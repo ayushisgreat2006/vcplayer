@@ -1,0 +1,10 @@
+# strings/messages.py
+START = "👋 Hey! I'm Stark Music — your voice chat DJ. Use /play <song> to begin."
+NOT_OWNER = "⛔ You are not the owner."
+BANNED = "🚫 You are globally banned from using this bot."
+NO_RESULT = "❌ No results found."
+QUEUE_EMPTY = "📭 Queue is empty."
+NOW_PLAYING = "▶️ Now playing"
+ADDED_TO_QUEUE = "➕ Added to queue"
+JOINING_VC = "🔊 Assistant is joining voice chat..."
+LEFT_VC = "👋 Left the voice chat."
