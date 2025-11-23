@@ -1,26 +1,48 @@
-# handlers/ban.py
-from pyrogram import filters
+from pyrogram import Client, filters
 from pyrogram.types import Message
-from utils.decorators import owner_only
 from database.bans import BanDB
+from utils.decorators import authorized_only, owner_only, chat_watcher
+from strings import Messages
+import logging
 
-def register_handlers(app):
-    @app.on_message(filters.command("globalban"))
-    @owner_only
-    async def global_ban(_, message: Message):
-        if len(message.command) < 2:
-            await message.reply_text("Usage: /globalban <user_id>")
-            return
-        uid = int(message.command[1])
-        await BanDB.add_ban(uid)
-        await message.reply_text(f"🚫 Globally banned {uid}.")
+logger = logging.getLogger(__name__)
 
-    @app.on_message(filters.command("globalunban"))
-    @owner_only
-    async def global_unban(_, message: Message):
-        if len(message.command) < 2:
-            await message.reply_text("Usage: /globalunban <user_id>")
+@Client.on_message(filters.command("globalban"))
+@authorized_only
+@owner_only
+@chat_watcher
+async def global_ban(client: Client, message: Message):
+    """Globally ban a user"""
+    if message.reply_to_message:
+        user_id = message.reply_to_message.from_user.id
+        reason = " ".join(message.command[1:]) or "No reason"
+    elif len(message.command) > 1:
+        try:
+            user_id = int(message.command[1])
+            reason = " ".join(message.command[2:]) or "No reason"
+        except:
+            await message.reply("❌ Please reply to a user or provide: `/globalban <user_id> [reason]`")
             return
-        uid = int(message.command[1])
-        await BanDB.remove_ban(uid)
-        await message.reply_text(f"✅ Globally unbanned {uid}.")
+    else:
+        await message.reply("❌ Please reply to a user or provide their user ID!")
+        return
+    
+    await BanDB.ban_user(user_id, reason)
+    await message.reply(Messages.USER_BANNED.format(user_id=user_id))
+
+@Client.on_message(filters.command("globalunban"))
+@authorized_only
+@owner_only
+@chat_watcher
+async def global_unban(client: Client, message: Message):
+    """Globally unban a user"""
+    if len(message.command) < 2:
+        await message.reply("❌ Please provide a user ID: `/globalunban <user_id>`")
+        return
+    
+    try:
+        user_id = int(message.command[1])
+        await BanDB.unban_user(user_id)
+        await message.reply(Messages.USER_UNBANNED.format(user_id=user_id))
+    except:
+        await message.reply("❌ Invalid user ID!")
