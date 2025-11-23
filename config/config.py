@@ -1,18 +1,47 @@
-# config/config.py
 import os
+from dotenv import load_dotenv
+from typing import Optional
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
-API_ID = int(os.getenv("API_ID", "0"))
-API_HASH = os.getenv("API_HASH", "YOUR_API_HASH")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
-ASSISTANT_STRING = os.getenv("ASSISTANT_STRING", None)  # user session string
-ASSISTANT_ID = int(os.getenv("ASSISTANT_ID", "0"))
+load_dotenv()
 
-# local storage for downloaded audio
-DOWNLOADS = os.getenv("DOWNLOADS", "downloads")
-os.makedirs(DOWNLOADS, exist_ok=True)
+class Config:
+    """Configuration manager for Stark Music Bot"""
+    
+    # Required Vars
+    BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
+    API_ID: int = int(os.getenv("API_ID", "0"))
+    API_HASH: str = os.getenv("API_HASH", "")
+    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    OWNER_ID: int = int(os.getenv("OWNER_ID", "0"))
+    ASSISTANT_STRING: str = os.getenv("ASSISTANT_STRING", "")
+    ASSISTANT_ID: int = int(os.getenv("ASSISTANT_ID", "0"))
+    
+    # Optional Vars
+    UPDATES_CHANNEL: Optional[str] = os.getenv("UPDATES_CHANNEL")
+    SPOTIFY_CLIENT_ID: Optional[str] = os.getenv("SPOTIFY_CLIENT_ID")
+    SPOTIFY_CLIENT_SECRET: Optional[str] = os.getenv("SPOTIFY_CLIENT_SECRET")
+    GENIUS_API_TOKEN: Optional[str] = os.getenv("GENIUS_API_TOKEN")
+    
+    # Bot Settings
+    AUTO_LEAVE_DURATION: int = int(os.getenv("AUTO_LEAVE_DURATION", "300"))  # 5 minutes
+    TEMP_FILE_CLEANUP: int = int(os.getenv("TEMP_FILE_CLEANUP", "3600"))     # 1 hour
+    BROADCAST_DELAY: float = float(os.getenv("BROADCAST_DELAY", "0.2"))
+    
+    # Validation
+    @classmethod
+    def validate(cls) -> bool:
+        """Validate critical config variables"""
+        required = [
+            cls.BOT_TOKEN,
+            cls.API_ID,
+            cls.API_HASH,
+            cls.MONGO_URI,
+            cls.OWNER_ID,
+            cls.ASSISTANT_STRING,
+            cls.ASSISTANT_ID,
+        ]
+        return all(required)
 
-# yt-dlp options
-YTDL_FORMAT = "bestaudio/best"
-FFMPEG_OPTIONS = "-vn -af aformat=s16:44100 -ar 44100 -ac 2"
+# Validate on import
+if not Config.validate():
+    raise ValueError("❌ Missing critical environment variables! Please check your .env file.")
