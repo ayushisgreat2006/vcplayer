@@ -1,19 +1,86 @@
-# callsmusic/converter.py
-import asyncio
+import yt_dlp
 import os
-from config.config import DOWNLOADS
+import aiofiles
+import aiohttp
+from typing import Dict, Optional, Tuple
+from utils.time import format_duration
+import logging
 
-async def ensure_wav(file_path: str) -> str:
-    """
-    Convert to .raw or .mp3 compatible with PyTgCalls (we stream .raw or direct file).
-    For simplicity, we keep as mp3 (AudioPiped supports mp3).
-    """
-    if file_path.endswith(".mp3") or file_path.endswith(".m4a") or file_path.endswith(".wav"):
-        return file_path
-    mp3_path = os.path.splitext(file_path)[0] + ".mp3"
-    if os.path.exists(mp3_path):
-        return mp3_path
-    cmd = f'ffmpeg -y -i "{file_path}" -vn -ab 128k -ar 44100 -ac 2 "{mp3_path}"'
-    proc = await asyncio.create_subprocess_shell(cmd)
-    await proc.communicate()
-    return mp3_path
+logger = logging.getLogger(__name__)
+
+class YTDLConverter:
+    """YouTube Downloader & Converter"""
+    
+    ydl_opts = {
+        'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        'noplaylist': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'logtostderr': False,
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': False,
+        'outtmpl': 'downloads/%(id)s.%(ext)s',
+        'restrictfilenames': True,
+    }
+    
+    @staticmethod
+    async def extract_info(url: str) -> Optional[Dict]:
+        """Extract video info from URL"""
+        try:
+            with yt_dlp.YoutubeDL(YTDLConverter.ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                if info:
+                    return {
+                        "title": info.get("title", "Unknown"),
+                        "duration": info.get("duration", 0),
+                        "url": info.get("url"),
+                        "webpage_url": info.get("webpage_url"),
+                        "thumbnail": info.get("thumbnail"),
+                        "uploader": info.get("uploader", "Unknown"),
+                        "source": "youtube"
+                    }
+        except Exception as e:
+            logger.error(f"YTDL Error: {e}")
+        return None
+    
+    @staticmethod
+    async def download_audio(url: str) -> Optional[str]:
+        """Download audio file"""
+        try:
+            with yt_dlp.YoutubeDL(YTDLConverter.ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(info)
+                if os.path.exists(filename):
+                    return filename
+        except Exception as e:
+            logger.error(f"Download Error: {e}")
+        return None
+    
+    @staticmethod
+    async def search_yt(query: str, max_results: int = 5) -> list:
+        """Search YouTube videos"""
+        search_opts = {
+            'skip_download': True,
+            'noplaylist': True,
+            'extract_flat': True,
+            'quiet': True,
+        }
+        
+        try:
+            with yt_dlp.YoutubeDL(search_opts) as ydl:
+                search_results = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
+                if search_results and 'entries' in search_results:
+                    results = []
+                    for entry in search_results['entries']:
+                        results.append({
+                            "title": entry.get("title", "Unknown"),
+                            "duration": entry.get("duration", 0),
+                            "url": f"https://youtube.com/watch?v={entry.get('id')}",
+                            "thumbnail": entry.get("thumbnail"),
+                            "source": "youtube"
+                        })
+                    return results
+        except Exception as e:
+            logger.error(f"Search Error: {e}")
+        return []
