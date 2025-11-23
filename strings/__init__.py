@@ -1,2 +1,3 @@
-# strings/__init__.py
-from .messages import *
+from .messages import Messages
+
+__all__ = ["Messages"]
