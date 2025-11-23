@@ -1,7 +1,9 @@
 pyrogram==2.0.106
-tgcrypto
-git+https://github.com/pytgcalls/pytgcalls@v0.0.22
-yt-dlp
-motor==3.3.1
-aiohttp
-uvloop==0.17.0
+py-tgcalls==3.0.0.dev5
+motor==3.4.0
+yt-dlp==2023.12.30
+python-dotenv==1.0.0
+aiofiles==23.2.1
+lyricsgenius==3.0.1
+spotipy==2.23.0
+Pillow==10.2.0
