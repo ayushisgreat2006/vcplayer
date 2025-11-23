@@ -1,19 +1,27 @@
-# database/bans.py
-from .mongodb import db
+from database.mongodb import mongo_db
 
 class BanDB:
-    col = db.global_bans
-
-    @classmethod
-    async def add_ban(cls, user_id: int):
-        await cls.col.update_one({"_id": "global"}, {"$addToSet": {"banned": user_id}}, upsert=True)
-
-    @classmethod
-    async def remove_ban(cls, user_id: int):
-        await cls.col.update_one({"_id": "global"}, {"$pull": {"banned": user_id}})
-
-    @classmethod
-    async def is_banned(cls, user_id: int) -> bool:
-        doc = await cls.col.find_one({"_id": "global"})
-        if not doc: return False
-        return user_id in doc.get("banned", [])
+    """Global ban management"""
+    
+    @staticmethod
+    async def ban_user(user_id: int, reason: str = "No reason") -> bool:
+        """Globally ban a user"""
+        await mongo_db.db.bans.insert_one({
+            "user_id": user_id,
+            "reason": reason
+        })
+        return True
+    
+    @staticmethod
+    async def unban_user(user_id: int) -> bool:
+        """Globally unban a user"""
+        result = await mongo_db.db.bans.delete_one({"user_id": user_id})
+        return result.deleted_count > 0
+    
+    @staticmethod
+    async def is_banned(user_id: int) -> tuple[bool, str]:
+        """Check if user is banned"""
+        doc = await mongo_db.db.bans.find_one({"user_id": user_id})
+        if doc:
+            return True, doc.get("reason", "No reason")
+        return False, ""
